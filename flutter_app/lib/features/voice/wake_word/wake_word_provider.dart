@@ -3,31 +3,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'wake_word_service.dart';
 
 /// 唤醒词管理 Provider
+///
+/// 使用纯 Dart VAD 方案，无需注册、无需联网、完全免费
 class WakeWordNotifier extends StateNotifier<WakeWordState> {
   WakeWordService? _service;
   StreamSubscription<WakeWordState>? _sub;
 
-  // 回调 — 检测到唤醒词时导航到聊天
+  /// 检测到唤醒词时导航到聊天
   void Function()? onWakeWordDetected;
 
   WakeWordNotifier() : super(WakeWordState.idle);
 
-  /// Picovoice Access Key (免费, 替换为你的 key)
-  /// 获取: https://console.picovoice.ai/
-  static const String _accessKey = 'YOUR_ACCESS_KEY_HERE';
-
-  /// 自定义 .ppn 文件路径
-  /// 在 Picovoice Console 训练"小猫小猫"后替换此路径
-  static const String? _customPpnPath = null; // 'assets/wake_word/xiaomao_xiaomao.ppn';
-
-  /// 启动唤醒词监听
+  /// 启动监听 — 通过 VAD 检测人声唤醒
   Future<bool> startListening() async {
     if (_service != null) return true;
 
     _service = WakeWordService(
-      accessKey: _accessKey,
-      customKeywordPath: _customPpnPath,
       onWakeWordDetected: _handleDetection,
+      threshold: 0.06,  // 灵敏度：正常说话即可唤醒
+      requiredHits: 3,   // 连续检测3次触发，防误触
     );
 
     _sub = _service!.stateStream.listen(
@@ -61,6 +55,11 @@ class WakeWordNotifier extends StateNotifier<WakeWordState> {
     } else {
       await startListening();
     }
+  }
+
+  /// 调整灵敏度 (0~1)
+  void setSensitivity(double level) {
+    _service?.setSensitivity(level);
   }
 
   @override

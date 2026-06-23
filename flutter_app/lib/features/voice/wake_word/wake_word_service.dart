@@ -1,8 +1,7 @@
 import 'dart:async';
-import 'package:flutter/services.dart';
-import 'package:porcupine_flutter/porcupine.dart';
-import 'package:porcupine_flutter/porcupine_manager.dart';
-import 'package:porcupine_flutter/porcupine_error.dart';
+import 'dart:math';
+import 'package:flutter/services.dart';  // VoidCallback
+import 'package:record/record.dart';
 
 /// 唤醒词状态
 enum WakeWordState {
@@ -12,9 +11,15 @@ enum WakeWordState {
   error,
 }
 
-/// 唤醒词服务 — 监听"小猫小猫"唤醒宠物
+/// VAD 唤醒服务 — 纯 Dart 实现，无需注册，无需联网
+///
+/// 原理：通过分析麦克风音频能量，检测到人声活动即触发唤醒
+/// 阈值可调节，默认对正常说话音量敏感
 class WakeWordService {
-  PorcupineManager? _manager;
+  final AudioRecorder _recorder = AudioRecorder();
+  StreamSubscription<RecordState>? _stateSub;
+  StreamSubscription<Amplitude>? _amplitudeSub;
+
   WakeWordState _state = WakeWordState.idle;
   final StreamController<WakeWordState> _stateController =
       StreamController<WakeWordState>.broadcast();
@@ -23,74 +28,96 @@ class WakeWordService {
   WakeWordState get currentState => _state;
   bool get isListening => _state == WakeWordState.listening;
 
+  /// 检测到唤醒时的回调
   VoidCallback? onWakeWordDetected;
 
-  final String _accessKey;
-  final String? _customKeywordPath;
+  /// VAD 阈值 (RMS 振幅，0.0~1.0)
+  /// 数值越低越灵敏。正常说话约 0.05~0.2，安静环境约 0.01
+  double _threshold = 0.06;
+
+  /// 触发唤醒需要持续检测到的次数（防误触）
+  int _requiredHits = 3;
+  int _hitCount = 0;
 
   WakeWordService({
-    required String accessKey,
-    String? customKeywordPath,
     this.onWakeWordDetected,
-  })  : _accessKey = accessKey,
-        _customKeywordPath = customKeywordPath;
+    double? threshold,
+    int? requiredHits,
+  }) {
+    if (threshold != null) _threshold = threshold;
+    if (requiredHits != null) _requiredHits = requiredHits;
+  }
 
-  /// 初始化并开始监听
+  /// 开始监听 — 启动音频流并分析能量
   Future<bool> start() async {
     if (_state == WakeWordState.listening) return true;
 
     try {
-      if (_customKeywordPath != null) {
-        // 使用自定义唤醒词 "小猫小猫" (.ppn 文件放在 assets/wake_word/)
-        _manager = await PorcupineManager.fromKeywordPaths(
-          _accessKey,
-          [_customKeywordPath],
-          _onDetection,
-          sensitivities: [0.5],
-          errorCallback: _onError,
-        );
-      } else {
-        // 开发模式：使用内置 "Porcupine" 关键词测试
-        // 后续配置 .ppn 文件后会切换为 "小猫小猫"
-        _manager = await PorcupineManager.fromBuiltInKeywords(
-          _accessKey,
-          [BuiltInKeyword.PORCUPINE],
-          _onDetection,
-          sensitivities: [0.5],
-          errorCallback: _onError,
-        );
+      // 请求麦克风权限
+      final hasPermission = await _recorder.hasPermission();
+      if (!hasPermission) {
+        print('[WakeWord] 无麦克风权限');
+        _updateState(WakeWordState.error);
+        return false;
       }
 
-      await _manager!.start();
+      // 启动音频流 (16kHz, 单声道)
+      await _recorder.startStream(const RecordConfig(
+        sampleRate: 16000,
+        numChannels: 1,
+        encoder: AudioEncoder.pcm16bits,
+      ));
+
+      _hitCount = 0;
+
+      // 监听振幅变化 (约每秒10次)
+      _amplitudeSub = _recorder.onAmplitudeChanged(
+        const Duration(milliseconds: 150),
+      ).listen(
+        (amplitude) {
+          if (_state != WakeWordState.listening) return;
+          _analyzeAmplitude(amplitude.current);
+        },
+        onError: (e) {
+          print('[WakeWord] 振幅监听错误: $e');
+          _updateState(WakeWordState.error);
+        },
+      );
+
       _updateState(WakeWordState.listening);
       return true;
-    } on PorcupineException catch (e) {
-      print('[WakeWord] 启动失败: ${e.message}');
-      _updateState(WakeWordState.error);
-      return false;
+
     } catch (e) {
-      print('[WakeWord] 启动异常: $e');
+      print('[WakeWord] 启动失败: $e');
       _updateState(WakeWordState.error);
       return false;
     }
   }
 
-  /// 停止监听
-  Future<void> stop() async {
-    try {
-      await _manager?.stop();
-      _updateState(WakeWordState.idle);
-    } catch (e) {
-      print('[WakeWord] 停止失败: $e');
+  /// 分析音频振幅 — 判断是否有人声活动
+  void _analyzeAmplitude(double amplitude) {
+    // 归一化振幅，正常说话约 0.05~0.2
+    if (amplitude > _threshold) {
+      _hitCount++;
+      // 连续检测到足够多次 → 触发唤醒
+      if (_hitCount >= _requiredHits) {
+        _onWakeDetected();
+        _hitCount = 0;
+      }
+    } else {
+      // 安静下来就重置计数（但保留连续判断）
+      if (_hitCount > 0) {
+        _hitCount = max(0, _hitCount - 1);
+      }
     }
   }
 
-  void _onDetection(int keywordIndex) {
-    print('[WakeWord] 🐱 小猫小猫! 唤醒成功!');
+  void _onWakeDetected() {
+    print('[WakeWord] 检测到人声! 唤醒!');
     _updateState(WakeWordState.detected);
     onWakeWordDetected?.call();
 
-    // 3秒后恢复监听
+    // 3秒冷却后恢复监听
     Future.delayed(const Duration(seconds: 3), () {
       if (_state == WakeWordState.detected) {
         _updateState(WakeWordState.listening);
@@ -98,9 +125,25 @@ class WakeWordService {
     });
   }
 
-  void _onError(PorcupineException error) {
-    print('[WakeWord] 错误: ${error.message}');
-    _updateState(WakeWordState.error);
+  /// 停止监听
+  Future<void> stop() async {
+    _hitCount = 0;
+    await _amplitudeSub?.cancel();
+    _amplitudeSub = null;
+
+    try {
+      await _recorder.stop();
+    } catch (_) {}
+
+    _updateState(WakeWordState.idle);
+  }
+
+  /// 调整灵敏度
+  /// sensitivity: 0.0 (最低, 需要很大声) ~ 1.0 (最高, 很轻的声音也触发)
+  void setSensitivity(double sensitivity) {
+    _threshold = 0.12 - sensitivity * 0.1;
+    _threshold = _threshold.clamp(0.02, 0.12);
+    _requiredHits = (4 - sensitivity * 2).round().clamp(2, 4);
   }
 
   void _updateState(WakeWordState newState) {
@@ -113,7 +156,8 @@ class WakeWordService {
   /// 释放资源
   Future<void> dispose() async {
     await stop();
-    await _manager?.delete();
+    _stateSub?.cancel();
     await _stateController.close();
+    _recorder.dispose();
   }
 }

@@ -90,7 +90,7 @@ class HomeScreen extends ConsumerWidget {
           ),
           const SizedBox(width: 6),
           Text(
-            '正在听你叫"小猫小猫" 🐱',
+            '正在倾听中，说句话试试 🎤',
             style: TextStyle(
               fontSize: 13,
               color: Colors.green[800],
@@ -131,7 +131,7 @@ class HomeScreen extends ConsumerWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                isOn ? '"小猫小猫" 唤醒中' : '点击开启 "小猫小猫" 唤醒',
+                isOn ? '人声唤醒中' : '点击开启语音唤醒',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
