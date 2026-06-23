@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../providers/character_provider.dart';
 import '../widgets/character_widget.dart';
 import '../../chat/providers/chat_provider.dart';
+import '../../call/widgets/voice_call_screen.dart';
 import '../../voice/wake_word/wake_word_provider.dart';
 import '../../voice/wake_word/wake_word_service.dart';
 
@@ -249,7 +250,12 @@ class HomeScreen extends ConsumerWidget {
                 child: SizedBox(
                   height: 56,
                   child: OutlinedButton(
-                    onPressed: () => context.go('/call'),
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const VoiceCallScreen(contactName: '小暖'),
+                      ),
+                    ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: const Color(0xFFFF8C94),
                       side: const BorderSide(color: Color(0xFFFF8C94), width: 1.5),
@@ -260,9 +266,9 @@ class HomeScreen extends ConsumerWidget {
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.phone_in_talk, size: 20),
+                        Icon(Icons.record_voice_over, size: 20),
                         SizedBox(width: 6),
-                        Text('打电话', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                        Text('语音通话', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
