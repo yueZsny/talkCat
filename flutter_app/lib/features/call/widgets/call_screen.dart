@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../models/call_models.dart';
 import '../providers/call_provider.dart';
 
@@ -218,7 +219,7 @@ class _CallScreenState extends ConsumerState<CallScreen>
             onTap: () {
               ref.read(callProvider.notifier).hangup();
               Future.delayed(const Duration(milliseconds: 800), () {
-                if (mounted) Navigator.pop(context);
+                if (mounted) context.pop();
               });
             },
             child: Container(

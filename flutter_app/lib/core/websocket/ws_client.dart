@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:async';
-import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 /// WebSocket 事件类型
@@ -153,9 +153,12 @@ class WsClient {
 
 /// 后端配置 — 根据平台自动选择地址
 class BackendConfig {
-  /// Android 模拟器用 10.0.2.2, iOS 模拟器和真机用 localhost
+  /// Android 模拟器用 10.0.2.2, 其他平台用 localhost
   static String get defaultHost {
-    if (Platform.isAndroid) {
+    if (kIsWeb) {
+      return 'localhost';  // Web 端同源
+    }
+    if (defaultTargetPlatform == TargetPlatform.android) {
       return '10.0.2.2';  // Android 模拟器 → 宿主机
     }
     return 'localhost';    // iOS 模拟器 / 真机

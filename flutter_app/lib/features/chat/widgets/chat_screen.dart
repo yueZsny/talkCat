@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'dart:async';
 import '../../../core/api/api_client.dart';
 import '../../character/providers/character_provider.dart';
@@ -154,7 +155,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           icon: const Icon(Icons.arrow_back_ios, size: 20),
           onPressed: () {
             ref.read(characterProvider.notifier).setEmotion(PetEmotion.idle);
-            Navigator.pop(context);
+            context.pop();
           },
         ),
         title: Row(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../features/character/providers/character_provider.dart';
 import '../../features/chat/providers/chat_provider.dart';
 
@@ -16,7 +17,7 @@ class SettingsScreen extends ConsumerWidget {
         title: const Text('设置'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, size: 20),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.pop(),
         ),
       ),
       body: ListView(

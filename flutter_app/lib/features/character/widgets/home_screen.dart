@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../providers/character_provider.dart';
 import '../widgets/character_widget.dart';
 import '../../chat/providers/chat_provider.dart';
@@ -22,7 +23,7 @@ class HomeScreen extends ConsumerWidget {
     ref.listen<WakeWordState>(wakeWordProvider, (prev, next) {
       if (next == WakeWordState.detected && prev != WakeWordState.detected) {
         ref.read(isPetActiveProvider.notifier).state = true;
-        Navigator.pushNamed(context, '/chat');
+        context.go('/chat');
       }
     });
 
@@ -31,20 +32,16 @@ class HomeScreen extends ConsumerWidget {
         child: Column(
           children: [
             _buildTopBar(context, ref, petName, isConnected, isListening, wakeState),
-            // 主区域：宠物展示
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // 唤醒状态指示
                     if (isListening)
                       _buildListeningIndicator(context),
-                    // 宠物角色
                     const CharacterWidget(),
                     const SizedBox(height: 8),
-                    // 情绪状态文字
                     Text(
                       characterState.emotion.label,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -57,10 +54,8 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ),
             ),
-            // 唤醒词开关
             _buildWakeWordToggle(context, ref, wakeState),
             const SizedBox(height: 8),
-            // 底部操作区
             _buildBottomActions(context, ref),
           ],
         ),
@@ -102,7 +97,6 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  /// 唤醒词开关 — 就在角色下方
   Widget _buildWakeWordToggle(BuildContext context, WidgetRef ref, WakeWordState wakeState) {
     final bool isOn = wakeState == WakeWordState.listening;
 
@@ -187,19 +181,13 @@ class HomeScreen extends ConsumerWidget {
                   const SizedBox(width: 4),
                   Text(
                     connected ? '在线' : '离线',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: connected ? Colors.green : Colors.grey,
-                    ),
+                    style: TextStyle(fontSize: 12, color: connected ? Colors.green : Colors.grey),
                   ),
                   if (isListening) ...[
                     const SizedBox(width: 8),
                     Icon(Icons.wifi_tethering, size: 12, color: Colors.green[400]),
                     const SizedBox(width: 2),
-                    Text(
-                      '语音待命',
-                      style: TextStyle(fontSize: 12, color: Colors.green[500]),
-                    ),
+                    Text('语音待命', style: TextStyle(fontSize: 12, color: Colors.green[500])),
                   ],
                 ],
               ),
@@ -207,12 +195,11 @@ class HomeScreen extends ConsumerWidget {
           ),
           Row(
             children: [
-              // 唤醒词状态图标
               if (wakeState == WakeWordState.error)
                 Icon(Icons.error_outline, size: 18, color: Colors.orange[300]),
               IconButton(
                 icon: const Icon(Icons.settings_outlined),
-                onPressed: () => Navigator.pushNamed(context, '/settings'),
+                onPressed: () => context.go('/settings'),
                 color: Colors.grey[600],
               ),
             ],
@@ -228,7 +215,6 @@ class HomeScreen extends ConsumerWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 聊天 + 打电话 双按钮
           Row(
             children: [
               Expanded(
@@ -237,7 +223,7 @@ class HomeScreen extends ConsumerWidget {
                   child: ElevatedButton(
                     onPressed: () {
                       ref.read(isPetActiveProvider.notifier).state = true;
-                      Navigator.pushNamed(context, '/chat');
+                      context.go('/chat');
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).colorScheme.primary,
@@ -252,10 +238,7 @@ class HomeScreen extends ConsumerWidget {
                       children: [
                         Icon(Icons.chat_bubble_outline, size: 20),
                         SizedBox(width: 6),
-                        Text(
-                          '聊天',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                        ),
+                        Text('聊天', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
@@ -266,7 +249,7 @@ class HomeScreen extends ConsumerWidget {
                 child: SizedBox(
                   height: 56,
                   child: OutlinedButton(
-                    onPressed: () => Navigator.pushNamed(context, '/call'),
+                    onPressed: () => context.go('/call'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: const Color(0xFFFF8C94),
                       side: const BorderSide(color: Color(0xFFFF8C94), width: 1.5),
@@ -279,10 +262,7 @@ class HomeScreen extends ConsumerWidget {
                       children: [
                         Icon(Icons.phone_in_talk, size: 20),
                         SizedBox(width: 6),
-                        Text(
-                          '打电话',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                        ),
+                        Text('打电话', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),

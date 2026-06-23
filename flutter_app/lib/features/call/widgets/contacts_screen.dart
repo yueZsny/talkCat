@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../providers/call_provider.dart';
 import '../models/call_models.dart';
 
@@ -16,12 +17,12 @@ class ContactsScreen extends ConsumerWidget {
         title: const Text('打电话'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, size: 20),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.pop(),
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.history),
-            onPressed: () => Navigator.pushNamed(context, '/call-logs'),
+            onPressed: () => context.go('/call-logs'),
           ),
         ],
       ),
@@ -153,7 +154,7 @@ class _CallScreenBodyState extends ConsumerState<_CallScreenBody> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
             ref.read(callProvider.notifier).hangup();
-            Navigator.pop(context);
+            context.pop();
           },
         ),
       ),
@@ -181,7 +182,7 @@ class _CallScreenBodyState extends ConsumerState<_CallScreenBody> {
               child: InkWell(
                 customBorder: const CircleBorder(),
                 onTap: () {
-                  Navigator.pop(context);
+                  context.pop();
                 },
                 child: Container(
                   width: 64,
