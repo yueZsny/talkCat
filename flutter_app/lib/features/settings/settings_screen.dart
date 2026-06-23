@@ -233,8 +233,7 @@ class SettingsScreen extends ConsumerWidget {
           TextButton(
             onPressed: () {
               if (controller.text.trim().isNotEmpty) {
-                // 目前 petName 是 Provider，暂不支持修改
-                // TODO: 后续接入实际存储
+                ref.read(petNameProvider.notifier).state = controller.text.trim();
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('已修改为 ${controller.text.trim()}')),

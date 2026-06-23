@@ -27,6 +27,12 @@ app.include_router(call.router, prefix="/api/v1", tags=["通话"])
 @app.on_event("startup")
 async def startup():
     print(f"[PetApp] 服务启动 - {settings.APP_NAME} v{settings.APP_VERSION}")
+    try:
+        from app.core.database import init_db
+        init_db()
+        print("[PetApp] 数据库初始化完成")
+    except Exception as e:
+        print(f"[PetApp] 数据库初始化跳过: {e}")
 
 
 @app.on_event("shutdown")

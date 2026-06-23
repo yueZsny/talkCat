@@ -63,8 +63,8 @@ final characterProvider = StateNotifierProvider<CharacterNotifier, CharacterStat
   return CharacterNotifier();
 });
 
-/// 宠物名称
-final petNameProvider = Provider<String>((ref) => '小暖');
+/// 宠物名称 (可修改)
+final petNameProvider = StateProvider<String>((ref) => '小暖');
 
 /// 是否为活跃对话中
 final isPetActiveProvider = StateProvider<bool>((ref) => false);

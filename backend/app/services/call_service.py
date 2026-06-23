@@ -1,12 +1,11 @@
 import uuid
 import asyncio
 import json
-import base64
 import subprocess
-import os
 from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
 
+from app.core.config import settings
 from app.services.llm_service import llm_service
 from app.services.tts_service import tts_service
 from app.services.asr_service import asr_service
@@ -27,13 +26,13 @@ class CallOrchestrator:
         # 活跃通话池 { call_id: CallSession }
         self._active_calls: Dict[str, "CallSession"] = {}
 
-        # FreeSWITCH ESL 配置
-        self.fs_host = os.getenv("FS_HOST", "localhost")
-        self.fs_port = int(os.getenv("FS_PORT", "8021"))
-        self.fs_password = os.getenv("FS_PASSWORD", "ClueCon")
+        # FreeSWITCH ESL 配置（通过 settings 读取）
+        self.fs_host = settings.FS_HOST
+        self.fs_port = settings.FS_PORT
+        self.fs_password = settings.FS_PASSWORD
 
         # SIP 中继配置 (阿里云 / Twilio)
-        self.sip_trunk = os.getenv("SIP_TRUNK", "")
+        self.sip_trunk = settings.SIP_TRUNK
 
     async def initiate_call(
         self,
@@ -41,7 +40,7 @@ class CallOrchestrator:
         contact_phone: str,
         trigger_type: str = "user_request",
         message_template: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> tuple[str, str]:
         """
         发起 AI 外呼
 
