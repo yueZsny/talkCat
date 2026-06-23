@@ -92,8 +92,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       if (!mounted) return;
 
       // 网络失败时使用本地兜底回复
+      ref.read(chatLoadingProvider.notifier).state = false;
       final fallback = _localFallback(text);
-      await _displayReply(fallback, 'idle');
+      await _displayReply(fallback, 'sad');
     }
   }
 
@@ -114,8 +115,26 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       _scrollToBottom();
     }
 
-    characterNotifier.inferEmotionFromText(reply);
+    // 使用后端返回的情绪（DeepSeek 智能判断），不再本地关键词匹配
+    final petEmotion = _parseEmotion(emotion);
+    characterNotifier.setEmotion(petEmotion, duration: const Duration(seconds: 6));
     ref.read(chatLoadingProvider.notifier).state = false;
+  }
+
+  /// 后端情绪字符串转枚举
+  PetEmotion _parseEmotion(String emotion) {
+    switch (emotion.toLowerCase()) {
+      case 'happy':
+        return PetEmotion.happy;
+      case 'sad':
+        return PetEmotion.sad;
+      case 'surprised':
+        return PetEmotion.surprised;
+      case 'sleepy':
+        return PetEmotion.sleepy;
+      default:
+        return PetEmotion.idle;
+    }
   }
 
   /// 语音回复回调
