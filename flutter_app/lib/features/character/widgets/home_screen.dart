@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/character_provider.dart';
 import '../widgets/character_widget.dart';
 import '../../chat/providers/chat_provider.dart';
+import '../../voice/wake_word/wake_word_provider.dart';
+import '../../voice/wake_word/wake_word_service.dart';
 
 /// 首页 — 显示宠物角色 + 交互入口
 class HomeScreen extends ConsumerWidget {
@@ -13,12 +15,22 @@ class HomeScreen extends ConsumerWidget {
     final characterState = ref.watch(characterProvider);
     final isConnected = ref.watch(connectionStateProvider);
     final petName = ref.watch(petNameProvider);
+    final wakeState = ref.watch(wakeWordProvider);
+    final isListening = wakeState == WakeWordState.listening;
+
+    // 唤醒词检测到 → 自动导航到聊天
+    ref.listen<WakeWordState>(wakeWordProvider, (prev, next) {
+      if (next == WakeWordState.detected && prev != WakeWordState.detected) {
+        ref.read(isPetActiveProvider.notifier).state = true;
+        Navigator.pushNamed(context, '/chat');
+      }
+    });
 
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
-            _buildTopBar(context, ref, petName, isConnected),
+            _buildTopBar(context, ref, petName, isConnected, isListening, wakeState),
             // 主区域：宠物展示
             Expanded(
               child: Padding(
@@ -26,6 +38,9 @@ class HomeScreen extends ConsumerWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    // 唤醒状态指示
+                    if (isListening)
+                      _buildListeningIndicator(context),
                     // 宠物角色
                     const CharacterWidget(),
                     const SizedBox(height: 8),
@@ -42,6 +57,9 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ),
             ),
+            // 唤醒词开关
+            _buildWakeWordToggle(context, ref, wakeState),
+            const SizedBox(height: 8),
             // 底部操作区
             _buildBottomActions(context, ref),
           ],
@@ -50,7 +68,97 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildTopBar(BuildContext context, WidgetRef ref, String petName, bool connected) {
+  Widget _buildListeningIndicator(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8F5E9),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFA5D6A7)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.green,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            '正在听你叫"小猫小猫" 🐱',
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.green[800],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 唤醒词开关 — 就在角色下方
+  Widget _buildWakeWordToggle(BuildContext context, WidgetRef ref, WakeWordState wakeState) {
+    final bool isOn = wakeState == WakeWordState.listening;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 40),
+      child: GestureDetector(
+        onTap: () => ref.read(wakeWordProvider.notifier).toggle(),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: isOn ? const Color(0xFFE8F5E9) : Colors.grey[50],
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isOn ? const Color(0xFF66BB6A) : Colors.grey[200]!,
+              width: 1.5,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                isOn ? Icons.pedal_bike : Icons.mic_off_outlined,
+                size: 18,
+                color: isOn ? Colors.green : Colors.grey[400],
+              ),
+              const SizedBox(width: 8),
+              Text(
+                isOn ? '"小猫小猫" 唤醒中' : '点击开启 "小猫小猫" 唤醒',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: isOn ? Colors.green[700] : Colors.grey[500],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.toggle_on_outlined,
+                size: 24,
+                color: isOn ? Colors.green : Colors.grey[300],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTopBar(
+    BuildContext context,
+    WidgetRef ref,
+    String petName,
+    bool connected,
+    bool isListening,
+    WakeWordState wakeState,
+  ) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: Row(
@@ -84,15 +192,30 @@ class HomeScreen extends ConsumerWidget {
                       color: connected ? Colors.green : Colors.grey,
                     ),
                   ),
+                  if (isListening) ...[
+                    const SizedBox(width: 8),
+                    Icon(Icons.wifi_tethering, size: 12, color: Colors.green[400]),
+                    const SizedBox(width: 2),
+                    Text(
+                      '语音待命',
+                      style: TextStyle(fontSize: 12, color: Colors.green[500]),
+                    ),
+                  ],
                 ],
               ),
             ],
           ),
-          // 设置按钮
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () => Navigator.pushNamed(context, '/settings'),
-            color: Colors.grey[600],
+          Row(
+            children: [
+              // 唤醒词状态图标
+              if (wakeState == WakeWordState.error)
+                Icon(Icons.error_outline, size: 18, color: Colors.orange[300]),
+              IconButton(
+                icon: const Icon(Icons.settings_outlined),
+                onPressed: () => Navigator.pushNamed(context, '/settings'),
+                color: Colors.grey[600],
+              ),
+            ],
           ),
         ],
       ),
@@ -101,11 +224,10 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _buildBottomActions(BuildContext context, WidgetRef ref) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 主要操作按钮
           SizedBox(
             width: double.infinity,
             height: 56,
@@ -133,24 +255,6 @@ class HomeScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          // 语音快捷按钮 (Phase 2 启用)
-          OutlinedButton.icon(
-            onPressed: () {
-              ref.read(isPetActiveProvider.notifier).state = true;
-              Navigator.pushNamed(context, '/chat');
-            },
-            icon: const Icon(Icons.mic),
-            label: const Text('语音对话'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Theme.of(context).colorScheme.primary,
-              side: BorderSide(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
           ),
         ],
