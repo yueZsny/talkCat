@@ -42,11 +42,19 @@ class LLMService:
 
         Args:
             message: 用户消息
-            history: 历史对话 [{role, content}, ...]
+            history: 历史对话 [{role, content}, ...] 或 MessageSchema 列表
 
         Returns:
             AI 回复文本
         """
+        # 统一历史记录格式: 支持 List[Dict] 和 List[MessageSchema]
+        if history is not None and history:
+            # 检测是否为 Pydantic BaseModel 对象
+            if hasattr(history[0], "model_dump"):
+                history = [{"role": m.role, "content": m.content} for m in history]
+            elif hasattr(history[0], "dict"):
+                history = [{"role": m.role, "content": m.content} for m in history]
+
         if not self.api_key:
             return self._fallback_reply(message)
 

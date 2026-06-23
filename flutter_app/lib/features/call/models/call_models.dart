@@ -69,7 +69,7 @@ class CallLog {
     if (durationSeconds < 60) return '${durationSeconds}秒';
     final min = durationSeconds ~/ 60;
     final sec = durationSeconds % 60;
-    return '${min}分${sec}秒';
+    return '$min分$sec秒';
   }
 }
 

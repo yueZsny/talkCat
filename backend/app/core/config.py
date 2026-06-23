@@ -21,6 +21,9 @@ class Settings:
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = True
 
+    # 数据库
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./pet_app.db")
+
     # LLM API — DeepSeek V4 (Anthropic 兼容接口)
     LLM_API_KEY: str = os.getenv("LLM_API_KEY", "")
     LLM_API_BASE: str = os.getenv("LLM_API_BASE", "https://api.deepseek.com/anthropic")
