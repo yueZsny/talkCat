@@ -1,12 +1,13 @@
 import uuid
 import json
 import base64
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, UploadFile, File, HTTPException
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, UploadFile, File, HTTPException, Query
 from fastapi.responses import Response
 from app.schemas.chat import ChatRequest, ChatResponse, MessageSchema
 from app.services.llm_service import llm_service
 from app.services.asr_service import asr_service
 from app.services.tts_service import tts_service
+from app.services.memory_service import memory_service
 
 router = APIRouter()
 
@@ -17,7 +18,13 @@ router = APIRouter()
 async def chat(request: ChatRequest):
     """文字聊天接口 — 接收用户消息，调用 LLM 生成回复"""
     conversation_id = request.conversation_id or str(uuid.uuid4())
-    reply = await llm_service.chat(request.message, request.history)
+    user_id = request.user_id or f"user_{conversation_id[:8]}"
+
+    reply = await llm_service.chat(
+        request.message,
+        request.history,
+        user_id=user_id,
+    )
     emotion = await llm_service.infer_emotion(reply)
 
     return ChatResponse(
@@ -37,6 +44,7 @@ async def chat_websocket(websocket: WebSocket):
     """文字聊天 WebSocket — 实时对话"""
     await websocket.accept()
     conversation_id = str(uuid.uuid4())
+    user_id = f"user_{conversation_id[:8]}"
     history = []
 
     try:
@@ -47,7 +55,7 @@ async def chat_websocket(websocket: WebSocket):
                 continue
 
             history.append({"role": "user", "content": user_message})
-            reply = await llm_service.chat(user_message, history)
+            reply = await llm_service.chat(user_message, history, user_id=user_id)
             emotion = await llm_service.infer_emotion(reply)
             history.append({"role": "pet", "content": reply})
 
@@ -99,8 +107,10 @@ async def voice_chat(file: UploadFile = File(...)):
     if not user_text:
         raise HTTPException(500, "语音识别失败")
 
-    # 2. LLM
-    reply = await llm_service.chat(user_text)
+    # 2. LLM (带记忆)
+    conversation_id = str(uuid.uuid4())
+    user_id = f"user_{conversation_id[:8]}"
+    reply = await llm_service.chat(user_text, user_id=user_id)
     emotion = await llm_service.infer_emotion(reply)
 
     # 3. TTS
@@ -129,6 +139,7 @@ async def voice_websocket(websocket: WebSocket):
     """
     await websocket.accept()
     conversation_id = str(uuid.uuid4())
+    user_id = f"user_{conversation_id[:8]}"
     history = []
 
     try:
@@ -138,7 +149,6 @@ async def voice_websocket(websocket: WebSocket):
             msg_type = data.get("type", "")
 
             if msg_type == "audio":
-                # 1. ASR
                 audio_b64 = data.get("data", "")
                 if not audio_b64:
                     continue
@@ -154,9 +164,9 @@ async def voice_websocket(websocket: WebSocket):
                 if not user_text:
                     continue
 
-                # 2. LLM
+                # 2. LLM (带记忆)
                 history.append({"role": "user", "content": user_text})
-                reply = await llm_service.chat(user_text, history)
+                reply = await llm_service.chat(user_text, history, user_id=user_id)
                 emotion = await llm_service.infer_emotion(reply)
                 history.append({"role": "pet", "content": reply})
 
@@ -189,3 +199,19 @@ async def voice_websocket(websocket: WebSocket):
             await websocket.send_json({"type": "error", "data": {"message": str(e)}})
         except Exception:
             pass
+
+
+# ─── 记忆查询 ─────────────────────────────────────────────
+
+@router.get("/memories")
+async def get_memories(user_id: str = "default"):
+    """获取小暖记住的用户信息"""
+    memories = memory_service.get_user_memories(user_id)
+    return {"memories": memories}
+
+
+@router.delete("/memories")
+async def clear_memories(user_id: str = "default"):
+    """清空小暖的记忆"""
+    memory_service.clear_user_memories(user_id)
+    return {"ok": True, "message": "记忆已清空"}

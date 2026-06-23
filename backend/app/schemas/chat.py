@@ -16,6 +16,7 @@ class ChatRequest(BaseModel):
     """聊天请求"""
     message: str
     conversation_id: Optional[str] = None
+    user_id: Optional[str] = None
     history: Optional[List[MessageSchema]] = None
 
 

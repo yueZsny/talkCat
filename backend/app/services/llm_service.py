@@ -1,6 +1,8 @@
+import asyncio
 from typing import Optional, List, Dict
 import httpx
 from app.core.config import settings
+from app.services.memory_service import memory_service
 
 # 系统提示词 — 宠物角色设定
 PET_SYSTEM_PROMPT = """你是一只名叫"小暖"的陪伴宠物，生活在一个手机 App 里。
@@ -36,20 +38,21 @@ class LLMService:
         self,
         message: str,
         history: Optional[List[Dict[str, str]]] = None,
+        user_id: Optional[str] = None,
     ) -> str:
         """
-        发送聊天消息并获取回复
+        发送聊天消息并获取回复（集成记忆系统）
 
         Args:
             message: 用户消息
             history: 历史对话 [{role, content}, ...] 或 MessageSchema 列表
+            user_id: 用户ID（用于记忆提取和注入）
 
         Returns:
             AI 回复文本
         """
         # 统一历史记录格式: 支持 List[Dict] 和 List[MessageSchema]
         if history is not None and history:
-            # 检测是否为 Pydantic BaseModel 对象
             if hasattr(history[0], "model_dump"):
                 history = [{"role": m.role, "content": m.content} for m in history]
             elif hasattr(history[0], "dict"):
@@ -103,29 +106,29 @@ class LLMService:
         self,
         message: str,
         history: Optional[List[Dict[str, str]]] = None,
+        user_id: Optional[str] = None,
+        extract_memory: bool = True,
     ) -> str:
         """
         Anthropic Messages API 格式调用 (DeepSeek /anthropic 端点)
-
-        DeepSeek 的 /anthropic 端点是 Anthropic Messages API 格式的兼容：
-        - POST /messages
-        - Authorization: Bearer <key>
-        - system 作为顶层字段
-        - messages 中只有 user/assistant 角色
+        集成记忆系统：注入记忆 → 调用 LLM → 提取新记忆
         """
-        # 转换历史记录 (过滤掉 system 角色)
+        # 注入用户记忆到 system prompt
+        system_prompt = PET_SYSTEM_PROMPT
+        if user_id:
+            memory_prompt = memory_service.get_memory_prompt(user_id)
+            if memory_prompt:
+                system_prompt += "\n" + memory_prompt
+
         messages = []
         if history:
             for msg in history[-10:]:
                 role = msg.get("role", "")
                 if role == "system":
                     continue
-                # Anthropic API 使用 user/assistant
                 if role == "pet":
                     role = "assistant"
                 messages.append({"role": role, "content": msg.get("content", "")})
-
-        # 添加当前用户消息
         messages.append({"role": "user", "content": message})
 
         try:
@@ -139,7 +142,7 @@ class LLMService:
                     },
                     json={
                         "model": self.model,
-                        "system": PET_SYSTEM_PROMPT,
+                        "system": system_prompt,
                         "messages": messages,
                         "temperature": 0.8,
                         "max_tokens": 500,
@@ -148,13 +151,22 @@ class LLMService:
                 resp.raise_for_status()
                 data = resp.json()
 
-                # Anthropic 格式: content 是 [{type: "text", text: "..."}]
                 content_blocks = data.get("content", [])
+                reply_text = ""
                 for block in content_blocks:
                     if block.get("type") == "text":
-                        return block.get("text", "")
+                        reply_text = block.get("text", "")
+                        break
 
-                return ""
+                # 提取并存储记忆（异步，不阻塞回复）
+                if extract_memory and user_id and reply_text:
+                    asyncio.create_task(
+                        memory_service.extract_and_store(
+                            user_id, message, reply_text
+                        )
+                    )
+
+                return reply_text
 
         except Exception as e:
             print(f"[LLM] Anthropic API 调用失败: {e}")
