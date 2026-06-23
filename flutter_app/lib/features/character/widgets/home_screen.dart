@@ -228,34 +228,67 @@ class HomeScreen extends ConsumerWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
-              onPressed: () {
-                ref.read(isPetActiveProvider.notifier).state = true;
-                Navigator.pushNamed(context, '/chat');
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(28),
-                ),
-                elevation: 4,
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.chat_bubble_outline, size: 22),
-                  SizedBox(width: 8),
-                  Text(
-                    '和我聊天吧',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          // 聊天 + 打电话 双按钮
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      ref.read(isPetActiveProvider.notifier).state = true;
+                      Navigator.pushNamed(context, '/chat');
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(28),
+                      ),
+                      elevation: 4,
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.chat_bubble_outline, size: 20),
+                        SizedBox(width: 6),
+                        Text(
+                          '聊天',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
                   ),
-                ],
+                ),
               ),
-            ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: SizedBox(
+                  height: 56,
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pushNamed(context, '/call'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFFF8C94),
+                      side: const BorderSide(color: Color(0xFFFF8C94), width: 1.5),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(28),
+                      ),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.phone_in_talk, size: 20),
+                        SizedBox(width: 6),
+                        Text(
+                          '打电话',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

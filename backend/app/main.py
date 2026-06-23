@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.routes import chat, health
+from app.api.routes import chat, health, call
 from app.core.config import settings
 
 app = FastAPI(
@@ -21,6 +21,7 @@ app.add_middleware(
 # 路由注册
 app.include_router(health.router, prefix="/api/v1", tags=["健康检查"])
 app.include_router(chat.router, prefix="/api/v1", tags=["对话"])
+app.include_router(call.router, prefix="/api/v1", tags=["通话"])
 
 
 @app.on_event("startup")

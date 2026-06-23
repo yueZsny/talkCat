@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'features/character/widgets/home_screen.dart';
 import 'features/chat/widgets/chat_screen.dart';
 import 'features/settings/settings_screen.dart';
+import 'features/call/widgets/contacts_screen.dart';
+import 'features/call/widgets/call_logs_screen.dart';
 
 /// 应用根 Widget — 配置主题、路由
 class PetApp extends StatelessWidget {
@@ -65,5 +67,7 @@ final GoRouter _router = GoRouter(
     GoRoute(path: '/', builder: (_, __) => const HomeScreen()),
     GoRoute(path: '/chat', builder: (_, __) => const ChatScreen()),
     GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
+    GoRoute(path: '/call', builder: (_, __) => const ContactsScreen()),
+    GoRoute(path: '/call-logs', builder: (_, __) => const CallLogsScreen()),
   ],
 );

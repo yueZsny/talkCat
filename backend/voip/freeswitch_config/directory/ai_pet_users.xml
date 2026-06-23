@@ -1,0 +1,26 @@
+<include>
+  <user id="ai_assistant">
+    <params>
+      <param name="password" value="ai_pet_2024"/>
+      <param name="vm-password" value="1234"/>
+    </params>
+    <variables>
+      <variable name="user_context" value="ai_pet"/>
+      <variable name="effective_caller_id_name" value="小暖宠物"/>
+      <variable name="effective_caller_id_number" value="4008888888"/>
+      <variable name="accountcode" value="ai_pet_service"/>
+    </variables>
+  </user>
+
+  <user id="human_proxy">
+    <params>
+      <param name="password" value="human_proxy_pass"/>
+      <param name="vm-password" value="5678"/>
+    </params>
+    <variables>
+      <variable name="user_context" value="ai_pet"/>
+      <variable name="effective_caller_id_name" value="AI助理"/>
+      <variable name="effective_caller_id_number" value="4008888889"/>
+    </variables>
+  </user>
+</include>

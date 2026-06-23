@@ -1,0 +1,44 @@
+<include>
+  <!-- AI Pet Call Gateway Configuration -->
+
+  <!-- SIP Profile -->
+  <gateway name="ai_pet_trunk">
+    <param name="realm" value="$${sip_trunk_realm}"/>
+    <param name="username" value="$${sip_trunk_user}"/>
+    <param name="password" value="$${sip_trunk_pass}"/>
+    <param name="register" value="true"/>
+    <param name="ping" value="25"/>
+    <param name="context" value="public"/>
+  </gateway>
+
+  <!-- AI 外呼拨号方案 -->
+  <extension name="ai_outbound_call">
+    <condition field="destination_number" expression="^1\d{10}$">
+      <action application="set" data="call_timeout=60"/>
+      <action application="set" data="hangup_after_bridge=true"/>
+      <action application="set" data="continue_on_fail=true"/>
+      <action application="bridge" data="sofia/gateway/ai_pet_trunk/$1"/>
+      <action application="log" data="INFO 外呼失败: 无法接通 $1"/>
+    </condition>
+  </extension>
+
+  <!-- AI 应答 (用于呼入场景) -->
+  <extension name="ai_inbound">
+    <condition field="destination_number" expression="^400\d{6}$">
+      <action application="answer"/>
+      <action application="set" data="tts_engine=flite"/>
+      <action application="set" data="tts_voice=cmu_us_awb"/>
+      <action application="sleep" data="1000"/>
+      <action application="playback" data="$${sound_dir}/voicemail/vm-hello.wav"/>
+      <action application="lua" data="ai_conversation.lua"/>
+    </condition>
+  </extension>
+
+  <!-- 媒体 bug: 录音 + 上传到 AI 服务 -->
+  <extension name="ai_record_and_transcribe">
+    <condition field="destination_number" expression="^record$">
+      <action application="answer"/>
+      <action application="bind_media_bug" data="ai_record.lua"/>
+    </condition>
+  </extension>
+</include>
