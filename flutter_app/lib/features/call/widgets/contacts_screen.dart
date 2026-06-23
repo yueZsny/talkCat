@@ -189,7 +189,7 @@ class _CallScreenBodyState extends ConsumerState<_CallScreenBody> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
             ref.read(callProvider.notifier).hangup();
-            context.pop();
+            Navigator.pop(context);
           },
         ),
       ),
@@ -217,7 +217,7 @@ class _CallScreenBodyState extends ConsumerState<_CallScreenBody> {
               child: InkWell(
                 customBorder: const CircleBorder(),
                 onTap: () {
-                  context.pop();
+                  Navigator.pop(context);
                 },
                 child: Container(
                   width: 64,
