@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:record/record.dart';
 import 'package:audioplayers/audioplayers.dart';
 
@@ -18,6 +19,7 @@ class AudioService {
 
   /// 开始录音
   Future<bool> startRecording({int maxDurationSec = 30}) async {
+    if (kIsWeb) return false;
     try {
       // 检查麦克风权限
       final hasPermission = await _recorder.hasPermission();
@@ -97,6 +99,7 @@ class AudioService {
 
   /// 播放音频字节数据 (从后端获取的 MP3)
   Future<void> playBytes(List<int> bytes) async {
+    if (kIsWeb) return;
     try {
       _isPlaying = true;
       // 写入临时文件再播放

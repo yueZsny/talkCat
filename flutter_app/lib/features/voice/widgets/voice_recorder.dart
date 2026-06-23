@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'dart:io';
+import 'dart:io' show File;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import '../../../core/audio/audio_service.dart';
 
@@ -74,8 +75,11 @@ class _VoiceRecorderButtonState extends State<VoiceRecorderButton>
       });
     }
 
-    if (path != null && File(path).lengthSync() > 1000) {
-      widget.onSendAudio(path);
+    if (!kIsWeb && path != null) {
+      final file = File(path);
+      if (file.lengthSync() > 1000) {
+        widget.onSendAudio(path);
+      }
     }
   }
 
