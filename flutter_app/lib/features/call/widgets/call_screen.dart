@@ -93,7 +93,7 @@ class _CallScreenState extends ConsumerState<CallScreen>
     if (call?.status == CallStatus.ringing) {
       _pulseController.repeat(reverse: true);
       return AnimatedBuilder(
-        listenable: _pulseController,
+        animation: _pulseController,
         builder: (context, child) {
           return Container(
             width: size + _pulseController.value * 20,
@@ -271,16 +271,4 @@ class _CallActionButton extends StatelessWidget {
   }
 }
 
-/// 简易 AnimatedBuilder（复用 voice_recorder 中的同名类）
-class AnimatedBuilder extends AnimatedWidget {
-  final Widget Function(BuildContext, Widget?) builder;
 
-  const AnimatedBuilder({
-    super.key,
-    required super.listenable,
-    required this.builder,
-  });
-
-  @override
-  Widget build(BuildContext context) => builder(context, null);
-}

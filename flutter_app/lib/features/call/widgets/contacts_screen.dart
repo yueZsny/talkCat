@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/call_provider.dart';
 import '../models/call_models.dart';
+import 'voice_call_screen.dart';
 
 /// 联系人列表 — 选择要拨打的联系人
 class ContactsScreen extends ConsumerWidget {
@@ -107,16 +108,50 @@ class ContactsScreen extends ConsumerWidget {
           contact.phone,
           style: TextStyle(color: Colors.grey[400], fontSize: 13),
         ),
-        trailing: const Icon(Icons.phone_in_talk, color: Color(0xFFFF8C94)),
-        onTap: () {
-          // 跳转到通话界面
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => CallScreenWrapper(contact: contact),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 语音通话 (App内实时对话)
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF8C94).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.record_voice_over, color: Color(0xFFFF8C94)),
+                tooltip: '语音通话',
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => VoiceCallScreen(contactName: contact.name),
+                    ),
+                  );
+                },
+              ),
             ),
-          );
-        },
+            const SizedBox(width: 4),
+            // 电话呼叫 (VoIP)
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF4CAF50).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.phone_in_talk, color: Color(0xFF4CAF50)),
+                tooltip: '打电话',
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CallScreenWrapper(contact: contact),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
