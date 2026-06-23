@@ -138,12 +138,15 @@ class HomeScreen extends ConsumerWidget {
           const SizedBox(height: 12),
           // 语音快捷按钮 (Phase 2 启用)
           OutlinedButton.icon(
-            onPressed: null, // Phase 2 启用
+            onPressed: () {
+              ref.read(isPetActiveProvider.notifier).state = true;
+              Navigator.pushNamed(context, '/chat');
+            },
             icon: const Icon(Icons.mic),
-            label: const Text('语音对话 (即将上线)'),
+            label: const Text('语音对话'),
             style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.grey[400],
-              side: BorderSide(color: Colors.grey[300]!),
+              foregroundColor: Theme.of(context).colorScheme.primary,
+              side: BorderSide(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(24),
               ),

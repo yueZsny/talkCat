@@ -13,6 +13,14 @@ class Settings:
     LLM_API_BASE: str = os.getenv("LLM_API_BASE", "https://api.openai.com/v1")
     LLM_MODEL: str = os.getenv("LLM_MODEL", "gpt-4o-mini")
 
+    # ASR (语音识别)
+    ASR_API_KEY: str = os.getenv("ASR_API_KEY", "")
+    ASR_API_BASE: str = os.getenv("ASR_API_BASE", "")
+    ASR_MODEL: str = os.getenv("ASR_MODEL", "whisper-1")
+
+    # TTS (语音合成)
+    TTS_VOICE: str = os.getenv("TTS_VOICE", "zh-CN-XiaoxiaoNeural")
+
     # Server
     HOST: str = "0.0.0.0"
     PORT: int = 8000

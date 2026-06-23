@@ -8,9 +8,8 @@ class ApiClient {
     _dio = Dio(BaseOptions(
       baseUrl: baseUrl ?? 'http://10.0.2.2:8000/api/v1', // Android 模拟器 → 宿主机
       connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 60),
       headers: {
-        'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
     ));
@@ -27,9 +26,42 @@ class ApiClient {
     return _dio.get(path, queryParameters: query);
   }
 
-  /// POST 请求
+  /// POST JSON 请求
   Future<Response> post(String path, {dynamic data}) async {
-    return _dio.post(path, data: data);
+    return _dio.post(
+      path,
+      data: data,
+      options: Options(contentType: Headers.jsonContentType),
+    );
+  }
+
+  /// 上传文件 (multipart/form-data)
+  Future<Response> uploadFile(
+    String path, {
+    required String filePath,
+    required String fieldName,
+  }) async {
+    final formData = FormData.fromMap({
+      fieldName: await MultipartFile.fromFile(filePath),
+    });
+    return _dio.post(path, data: formData);
+  }
+
+  /// 上传二进制数据作为文件
+  Future<Response> uploadBytes(
+    String path, {
+    required List<int> bytes,
+    required String fieldName,
+    String filename = 'audio.wav',
+  }) async {
+    final formData = FormData.fromMap({
+      fieldName: MultipartFile.fromBytes(
+        bytes,
+        filename: filename,
+        contentType: DioMediaType('audio', 'wav'),
+      ),
+    });
+    return _dio.post(path, data: formData);
   }
 
   /// 设置认证 Token

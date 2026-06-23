@@ -73,6 +73,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     });
   }
 
+  /// 处理语音对话回复
+  void _handleVoiceReply(String reply, String emotion) {
+    ref.read(chatProvider.notifier).addPetMessage(reply);
+    ref.read(characterProvider.notifier).inferEmotionFromText(reply);
+    ref.read(chatLoadingProvider.notifier).state = false;
+    _scrollToBottom();
+  }
+
   Future<void> _generateResponse(String userMessage) async {
     final chatNotifier = ref.read(chatProvider.notifier);
     final characterNotifier = ref.read(characterProvider.notifier);
@@ -233,6 +241,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           // 输入区
           ChatInput(
             onSend: _sendMessage,
+            onVoiceReply: _handleVoiceReply,
             isLoading: isLoading,
           ),
         ],
